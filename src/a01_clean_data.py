@@ -30,5 +30,3 @@ def clean_data():
     df.drop(columns=["date","timestamp","temperature"], inplace=True)
 
     return df,mindate,maxdate
-
-print(clean_data())
