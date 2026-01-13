@@ -4,6 +4,7 @@ import requests_cache
 from retry_requests import retry
 
 def fetch_weather(min_date, max_date):
+    
     # Setup the Open-Meteo API client with cache and retry on error
     cache_session = requests_cache.CachedSession('.cache', expire_after = -1)
     retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
@@ -18,6 +19,7 @@ def fetch_weather(min_date, max_date):
         "start_date": min_date,
         "end_date": max_date,
         "hourly": ["temperature_2m", "rain", "weather_code"],
+        "timezone": "America/Los_Angeles"
     }
     responses = openmeteo.weather_api(url, params=params)
 
@@ -46,15 +48,19 @@ def fetch_weather(min_date, max_date):
 
     df = pd.DataFrame(data = hourly_data)
 
+    df['date'] = df['date'].dt.tz_convert('America/Los_Angeles')
+    df['date'] = df['date'].dt.tz_localize(None)
+
     # Transform the data
     df["hour"] = df["date"].dt.hour
+    df["exact_date"] = pd.to_datetime(df["date"].dt.date)
 
-    df["date"] = df["date"].astype(str)
-    df["date"] = df["date"].str[:10]
-    df.rename(columns={'date': 'exact_date','rain':'rain_cm'}, inplace=True)
-    df['exact_date'] = pd.to_datetime(df['exact_date'])
+    df.rename(columns={'rain':'rain_mm'}, inplace=True)
+    df.drop(columns=['date'], inplace=True)
 
     return df
+
+
 
 def clean_weather_data(df):
 
